@@ -4,6 +4,8 @@ import 'package:drift/drift.dart';
 class ExpenseModel {
   int? id;
 
+  int groupId;
+
   String title;
 
   int peopleCount;
@@ -20,6 +22,7 @@ class ExpenseModel {
 
   ExpenseModel({
     this.id,
+    required this.groupId,
     required this.title,
     required this.peopleCount,
     required this.total,
@@ -28,6 +31,7 @@ class ExpenseModel {
   Map<String, dynamic> toMap() {
     return {
       'id': id,
+      'groupId': groupId,
       'title': title,
       'people_count': peopleCount,
       'total': total,
@@ -37,6 +41,7 @@ class ExpenseModel {
   factory ExpenseModel.fromMap(Map<String, dynamic> map) {
     return ExpenseModel(
       id: map['id'],
+      groupId: map['groupId'],
       title: map['title'],
       peopleCount: map['people_count'],
       total: map['total'],
@@ -46,6 +51,7 @@ class ExpenseModel {
   factory ExpenseModel.fromDb(Expense dbExpense) {
     return ExpenseModel(
       id: dbExpense.id,
+      groupId: dbExpense.groupId!,
       title: dbExpense.title,
       peopleCount: dbExpense.peopleCount,
       total: dbExpense.total,
@@ -55,6 +61,8 @@ class ExpenseModel {
   ExpensesCompanion toCompanion() {
     return ExpensesCompanion(
       id: id == null ? const Value.absent() : Value(id!),
+      
+      groupId: Value(groupId),
 
       title: Value(title),
 

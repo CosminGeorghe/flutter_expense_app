@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import '../models/expense_model.dart';
 
 class CreateExpenseDialog extends StatefulWidget {
-  const CreateExpenseDialog({super.key});
+  final int groupId;
+
+  const CreateExpenseDialog({super.key, required this.groupId});
 
   @override
   State<CreateExpenseDialog> createState() => _CreateExpenseDialogState();
@@ -130,6 +132,8 @@ class _CreateExpenseDialogState extends State<CreateExpenseDialog> {
 
               ExpenseModel(
                 title: titleController.text.trim(),
+
+                groupId: widget.groupId,
 
                 peopleCount: int.parse(peopleController.text),
 

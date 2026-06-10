@@ -1,31 +1,33 @@
 import 'package:flutter/material.dart';
-import '../widgets/create_group_dialog.dart';
-import '../models/group_model.dart';
-import 'expenses_screen.dart';
+import '../widgets/create_expense_dialog.dart';
+import '../models/expense_model.dart';
+import 'expense_screen.dart';
 import '../database/database_provider.dart';
 import '../widgets/custom_confirmation_dialog.dart';
 
-class DashboardScreen extends StatefulWidget {
-  const DashboardScreen({super.key});
+class ExpensesScreen extends StatefulWidget {
+  final int groupId;
+  
+  const ExpensesScreen({super.key, required this.groupId});
 
   @override
-  State<DashboardScreen> createState() => _DashboardScreenState();
+  State<ExpensesScreen> createState() => _ExpensesScreenState();
 }
 
-class _DashboardScreenState extends State<DashboardScreen> {
-  List<GroupModel> groups = [];
+class _ExpensesScreenState extends State<ExpensesScreen> {
+  List<ExpenseModel> expenses = [];
 
-  final Set<int> expandedGroups = {};
+  final Set<int> expandedExpenses = {};
 
-  Future<void> loadGroups() async {
-    final dbGroups = await database.getAllGroups();
+  Future<void> loadExpenses() async {
+    final dbExpenses = await database.getExpensesForGroup(widget.groupId);
 
-    final loadedGroups = dbGroups.map((dbGroups) {
-      return GroupModel.fromDb(dbGroups);
+    final loadedExpenses = dbExpenses.map((dbExpense) {
+      return ExpenseModel.fromDb(dbExpense);
     }).toList();
 
     setState(() {
-      groups = loadedGroups;
+      expenses = loadedExpenses;
     });
   }
 
@@ -33,22 +35,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
   void initState() {
     super.initState();
 
-    loadGroups();
+    loadExpenses();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Groups")),
+      appBar: AppBar(title: const Text("Expenses")),
 
       body: Column(
         children: [
           Expanded(
             child: ListView.builder(
-              itemCount: groups.length,
+              itemCount: expenses.length,
 
               itemBuilder: (context, index) {
-                final group = groups[index];
+                final expense = expenses[index];
 
                 return Card(
                   child: Theme(
@@ -56,16 +58,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       context,
                     ).copyWith(dividerColor: Colors.transparent),
                     child: ExpansionTile(
-                      key: ValueKey(group.id),
+                      key: ValueKey(expense.id),
 
-                      initiallyExpanded: expandedGroups.contains(group.id),
+                      initiallyExpanded: expandedExpenses.contains(expense.id),
 
                       onExpansionChanged: (expanded) {
                         setState(() {
                           if (expanded) {
-                            expandedGroups.add(group.id!);
+                            expandedExpenses.add(expense.id!);
                           } else {
-                            expandedGroups.remove(group.id);
+                            expandedExpenses.remove(expense.id);
                           }
                         });
                       },
@@ -76,7 +78,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         children: [
                           Expanded(
                             child: Text(
-                              group.name,
+                              expense.title,
 
                               style: const TextStyle(
                                 fontWeight: FontWeight.bold,
@@ -87,6 +89,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           ),
 
                           const SizedBox(width: 10),
+
+                          Text(
+                            "${expense.total.toStringAsFixed(2)} RON",
+
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
                         ],
                       ),
 
@@ -98,6 +106,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
 
                             children: [
+                              Text("People: ${expense.peopleCount}"),
+
+                              const SizedBox(height: 10),
 
                               Row(
                                 mainAxisAlignment:
@@ -109,21 +120,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                       final confirmed = await showDialog<bool>(
                                         context: context,
                                         builder: (_) => CustomConfirmationDialog(
-                                          title: 'Delete Group',
+                                          title: 'Delete Expense',
                                           message:
-                                              'Are you sure you want to delete "${group.name}"?',
+                                              'Are you sure you want to delete "${expense.title}"?',
                                         ),
                                       );
                                       if (confirmed == true) {
-                                        expandedGroups.remove(group.id);
-                                        await database.deleteGroup(
-                                          group.id!,
+                                        expandedExpenses.remove(expense.id);
+                                        await database.deleteExpense(
+                                          expense.id!,
                                         );
-                                        await loadGroups();
+                                        await loadExpenses();
                                       }
                                     },
 
-                                    child: const Text("Delete Group"),
+                                    child: const Text("Delete Expense"),
                                   ),
                                   ElevatedButton(
                                     onPressed: () async {
@@ -131,15 +142,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                         context,
 
                                         MaterialPageRoute(
-                                          builder: (_) => ExpensesScreen(
-                                            groupId: group.id!,
+                                          builder: (_) => ExpenseScreen(
+                                            expenseId: expense.id!,
                                           ),
                                         ),
                                       );
-                                      await loadGroups();
+                                      await loadExpenses();
                                     },
 
-                                    child: const Text("Open Group"),
+                                    child: const Text("Open Expense"),
                                   ),
                                 ],
                               ),
@@ -161,26 +172,26 @@ class _DashboardScreenState extends State<DashboardScreen> {
               width: double.infinity,
 
               child: ElevatedButton(
-                onPressed: () async{
-                  final GroupModel? result = await showDialog<GroupModel>(
+                onPressed: () async {
+                  final ExpenseModel? result = await showDialog<ExpenseModel>(
                     context: context,
 
-                    builder: (_) => const CreateGroupDialog(),
+                    builder: (_) => CreateExpenseDialog(groupId: widget.groupId,),
                   );
 
                   if (result == null) {
                     return;
                   }
 
-                  final GroupModel group = result;
+                  final ExpenseModel expense = result;
+                  expense.groupId = widget.groupId;
 
-                  await database.insertGroup(group.toCompanion());
+                  await database.insertExpense(expense.toCompanion());
 
-                  await loadGroups();
-                  
+                  await loadExpenses();
                 },
 
-                child: const Text("Create Group"),
+                child: const Text("Create Expense"),
               ),
             ),
           ),

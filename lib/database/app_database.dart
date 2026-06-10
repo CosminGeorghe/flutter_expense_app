@@ -12,7 +12,8 @@ part 'app_database.g.dart';
 class Expenses extends Table {
   IntColumn get id => integer().autoIncrement()();
 
-  IntColumn get groupId => integer().nullable()();
+  IntColumn get groupId =>
+      integer().references(Groups, #id, onDelete: KeyAction.cascade)();
 
   TextColumn get title => text()();
 
@@ -24,7 +25,8 @@ class Expenses extends Table {
 class Products extends Table {
   IntColumn get id => integer().autoIncrement()();
 
-  IntColumn get expenseId => integer().references(Expenses, #id)();
+  IntColumn get expenseId =>
+      integer().references(Expenses, #id, onDelete: KeyAction.cascade)();
 
   TextColumn get name => text()();
 
@@ -42,9 +44,26 @@ class Groups extends Table {
 class Persons extends Table {
   IntColumn get id => integer().autoIncrement()();
 
-  IntColumn get groupId => integer().nullable().references(Groups, #id)();
+  IntColumn get groupId =>
+      integer().references(Groups, #id, onDelete: KeyAction.cascade)();
 
   TextColumn get name => text()();
+}
+
+class ExpenseParticipants extends Table {
+  IntColumn get expenseId =>
+      integer().references(
+        Expenses,
+        #id,
+        onDelete: KeyAction.cascade,
+      )();
+
+  IntColumn get personId =>
+      integer().references(
+        Persons,
+        #id,
+        onDelete: KeyAction.cascade,
+      )();
 }
 
 @DriftDatabase(tables: [Expenses, Products, Groups, Persons])
@@ -88,8 +107,15 @@ class AppDatabase extends _$AppDatabase {
   }
 
   Future<int> deleteExpense(int expenseId) async {
-    await deleteProductsForExpense(expenseId);
     return (delete(expenses)..where((e) => e.id.equals(expenseId))).go();
+  }
+
+  Future<List<Expense>> getExpensesForGroup(int groupId) {
+    return (select(expenses)..where((e) => e.groupId.equals(groupId))).get();
+  }
+
+  Future<int> deleteExpensesForGroup(int groupId) {
+    return (delete(expenses)..where((e) => e.groupId.equals(groupId))).go();
   }
 
   Future<int> insertProduct(ProductsCompanion product) {
@@ -112,6 +138,54 @@ class AppDatabase extends _$AppDatabase {
 
   Future<int> deleteProductsForExpense(int expenseId) {
     return (delete(products)..where((p) => p.expenseId.equals(expenseId))).go();
+  }
+
+  Future<int> insertGroup(GroupsCompanion group) {
+    return into(groups).insert(group);
+  }
+
+  Future<List<Group>> getAllGroups() async {
+    return (select(groups)..orderBy([(g) => OrderingTerm.desc(g.id)])).get();
+  }
+
+  Future<int> deleteGroup(int groupId) {
+    return (delete(groups)..where((g) => g.id.equals(groupId))).go();
+  }
+
+  Future<bool> updateGroup(GroupsCompanion group) {
+    return update(groups).replace(group);
+  }
+
+  Future<Group?> getGroupById(int groupId) {
+    return (select(
+      groups,
+    )..where((g) => g.id.equals(groupId))).getSingleOrNull();
+  }
+
+  Future<int> insertPerson(PersonsCompanion person) {
+    return into(persons).insert(person);
+  }
+
+  Future<List<Person>> getPersonsForGroup(int groupId) {
+    return (select(persons)..where((p) => p.groupId.equals(groupId))).get();
+  }
+
+  Future<Person?> getPersonById(int personId) {
+    return (select(
+      persons,
+    )..where((p) => p.id.equals(personId))).getSingleOrNull();
+  }
+
+  Future<bool> updatePerson(PersonsCompanion person) {
+    return update(persons).replace(person);
+  }
+
+  Future<int> deletePerson(int personId) {
+    return (delete(persons)..where((p) => p.id.equals(personId))).go();
+  }
+
+  Future<int> deletePersonsForGroup(int groupId) {
+    return (delete(persons)..where((p) => p.groupId.equals(groupId))).go();
   }
 }
 
