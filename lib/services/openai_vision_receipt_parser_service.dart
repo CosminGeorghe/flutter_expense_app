@@ -1,11 +1,10 @@
 import 'dart:convert';
 import 'dart:io';
-
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 
 class OpenAiVisionReceiptParserService {
-  static const String _apiKey =
-      '';
+  final String _apiKey = dotenv.env['OPENAI_API_KEY']!;
 
   Future<String> parseImage(String imagePath) async {
     final imageBytes = await File(imagePath).readAsBytes();
