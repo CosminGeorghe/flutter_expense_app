@@ -51,7 +51,7 @@ class ExpenseModel {
   factory ExpenseModel.fromDb(Expense dbExpense) {
     return ExpenseModel(
       id: dbExpense.id,
-      groupId: dbExpense.groupId!,
+      groupId: dbExpense.groupId,
       title: dbExpense.title,
       peopleCount: dbExpense.peopleCount,
       total: dbExpense.total,

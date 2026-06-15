@@ -52,21 +52,18 @@ class Persons extends Table {
 
 class ExpenseParticipants extends Table {
   IntColumn get expenseId =>
-      integer().references(
-        Expenses,
-        #id,
-        onDelete: KeyAction.cascade,
-      )();
+      integer().references(Expenses, #id, onDelete: KeyAction.cascade)();
 
   IntColumn get personId =>
-      integer().references(
-        Persons,
-        #id,
-        onDelete: KeyAction.cascade,
-      )();
+      integer().references(Persons, #id, onDelete: KeyAction.cascade)();
+
+  @override
+  Set<Column> get primaryKey => {expenseId, personId};
 }
 
-@DriftDatabase(tables: [Expenses, Products, Groups, Persons])
+@DriftDatabase(
+  tables: [Expenses, Products, Groups, Persons, ExpenseParticipants],
+)
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
@@ -186,6 +183,34 @@ class AppDatabase extends _$AppDatabase {
 
   Future<int> deletePersonsForGroup(int groupId) {
     return (delete(persons)..where((p) => p.groupId.equals(groupId))).go();
+  }
+
+  Future<int> insertExpenseParticipant(
+    ExpenseParticipantsCompanion participant,
+  ) {
+    return into(expenseParticipants).insert(participant);
+  }
+
+  Future<List<ExpenseParticipant>> getParticipantsForExpense(int expenseId) {
+    return (select(
+      expenseParticipants,
+    )..where((p) => p.expenseId.equals(expenseId))).get();
+  }
+
+  Future<int> deleteExpenseParticipant({
+    required int expenseId,
+    required int personId,
+  }) {
+    return (delete(expenseParticipants)..where(
+          (p) => p.expenseId.equals(expenseId) & p.personId.equals(personId),
+        ))
+        .go();
+  }
+
+  Future<int> deleteParticipantsForExpense(int expenseId) {
+    return (delete(
+      expenseParticipants,
+    )..where((p) => p.expenseId.equals(expenseId))).go();
   }
 }
 

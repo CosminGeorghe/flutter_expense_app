@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
 import '../widgets/create_expense_dialog.dart';
 import '../models/expense_model.dart';
+import '../models/person_model.dart';
 import 'expense_screen.dart';
 import '../database/database_provider.dart';
 import '../widgets/custom_confirmation_dialog.dart';
+import '../widgets/create_person_dialog.dart';
 
 class ExpensesScreen extends StatefulWidget {
   final int groupId;
-  
+
   const ExpensesScreen({super.key, required this.groupId});
 
   @override
@@ -16,6 +18,8 @@ class ExpensesScreen extends StatefulWidget {
 
 class _ExpensesScreenState extends State<ExpensesScreen> {
   List<ExpenseModel> expenses = [];
+
+  List<PersonModel> persons = [];
 
   final Set<int> expandedExpenses = {};
 
@@ -31,11 +35,22 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
     });
   }
 
+  Future<void> loadPersons() async {
+    final dbPersons = await database.getPersonsForGroup(widget.groupId);
+
+    final loadedPersons = dbPersons.map(PersonModel.fromDb).toList();
+
+    setState(() {
+      persons = loadedPersons;
+    });
+  }
+
   @override
   void initState() {
     super.initState();
 
     loadExpenses();
+    loadPersons();
   }
 
   @override
@@ -45,6 +60,82 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
 
       body: Column(
         children: [
+          const Text('People', style: TextStyle(fontWeight: FontWeight.bold)),
+
+          const SizedBox(height: 8),
+
+          Column(
+            children: persons.map((person) {
+              final controller = TextEditingController(text: person.name);
+
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: controller,
+
+                        onChanged: (value) async {
+                          person.name = value;
+
+                          await database.updatePerson(person.toCompanion());
+                        },
+
+                        decoration: const InputDecoration(
+                          border: OutlineInputBorder(),
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(width: 8),
+
+                    IconButton(
+                      icon: const Icon(Icons.delete),
+
+                      onPressed: () async {
+                        final confirmed = await showDialog<bool>(
+                          context: context,
+
+                          builder: (_) => CustomConfirmationDialog(
+                            title: 'Delete Person',
+                            message:
+                                'Are you sure you want to delete "${person.name}"?',
+                          ),
+                        );
+
+                        if (confirmed == true) {
+                          await database.deletePerson(person.id!);
+
+                          await loadPersons();
+                        }
+                      },
+                    ),
+                  ],
+                ),
+              );
+            }).toList(),
+          ),
+
+          ElevatedButton(
+            onPressed: () async {
+              final PersonModel? result = await showDialog<PersonModel>(
+                context: context,
+                builder: (_) => CreatePersonDialog(groupId: widget.groupId),
+              );
+
+              if (result == null) {
+                return;
+              }
+
+              await database.insertPerson(result.toCompanion());
+
+              await loadPersons();
+            },
+            child: const Text('Add Person'),
+          ),
+
           Expanded(
             child: ListView.builder(
               itemCount: expenses.length,
@@ -176,7 +267,8 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                   final ExpenseModel? result = await showDialog<ExpenseModel>(
                     context: context,
 
-                    builder: (_) => CreateExpenseDialog(groupId: widget.groupId,),
+                    builder: (_) =>
+                        CreateExpenseDialog(groupId: widget.groupId),
                   );
 
                   if (result == null) {
