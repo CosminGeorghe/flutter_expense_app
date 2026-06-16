@@ -7,6 +7,7 @@ import '../database/database_provider.dart';
 import 'package:image_picker/image_picker.dart';
 import '../services/openai_vision_receipt_parser_service.dart';
 import '../widgets/receipt_import_dialog.dart';
+import '../widgets/manage_participants_dialog.dart';
 import '../services/image_compression_service.dart';
 import 'dart:convert';
 
@@ -27,8 +28,6 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
   bool isEditingTitle = false;
 
   late final TextEditingController titleController;
-
-  final TextEditingController peopleController = TextEditingController();
 
   final TextEditingController totalController = TextEditingController();
 
@@ -112,7 +111,6 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
     setState(() {
       expense = ExpenseModel.fromDb(dbExpense);
       titleController.text = expense!.title;
-      peopleController.text = expense!.peopleCount.toString();
       totalController.text = expense!.total.toString();
     });
   }
@@ -361,7 +359,7 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
 
                             children: [
                               const Text(
-                                "People",
+                                "Participants number",
                                 style: TextStyle(fontWeight: FontWeight.bold),
                               ),
 
@@ -392,6 +390,21 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
                                 ),
                               ),
                             ],
+                          ),
+
+                          ElevatedButton(
+                            onPressed: () async {
+                              await showDialog(
+                                context: context,
+
+                                builder: (_) => ManageParticipantsDialog(
+                                  expenseId: widget.expenseId,
+                                  groupId: expense!.groupId,
+                                ),
+                              );
+                            },
+
+                            child: const Text('Manage Participants'),
                           ),
 
                           const Divider(height: 24),

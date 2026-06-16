@@ -228,17 +228,6 @@ class $ExpensesTable extends Expenses with TableInfo<$ExpensesTable, Expense> {
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _peopleCountMeta = const VerificationMeta(
-    'peopleCount',
-  );
-  @override
-  late final GeneratedColumn<int> peopleCount = GeneratedColumn<int>(
-    'people_count',
-    aliasedName,
-    false,
-    type: DriftSqlType.int,
-    requiredDuringInsert: true,
-  );
   static const VerificationMeta _totalMeta = const VerificationMeta('total');
   @override
   late final GeneratedColumn<double> total = GeneratedColumn<double>(
@@ -250,13 +239,7 @@ class $ExpensesTable extends Expenses with TableInfo<$ExpensesTable, Expense> {
     defaultValue: const Constant(0),
   );
   @override
-  List<GeneratedColumn> get $columns => [
-    id,
-    groupId,
-    title,
-    peopleCount,
-    total,
-  ];
+  List<GeneratedColumn> get $columns => [id, groupId, title, total];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -288,17 +271,6 @@ class $ExpensesTable extends Expenses with TableInfo<$ExpensesTable, Expense> {
     } else if (isInserting) {
       context.missing(_titleMeta);
     }
-    if (data.containsKey('people_count')) {
-      context.handle(
-        _peopleCountMeta,
-        peopleCount.isAcceptableOrUnknown(
-          data['people_count']!,
-          _peopleCountMeta,
-        ),
-      );
-    } else if (isInserting) {
-      context.missing(_peopleCountMeta);
-    }
     if (data.containsKey('total')) {
       context.handle(
         _totalMeta,
@@ -326,10 +298,6 @@ class $ExpensesTable extends Expenses with TableInfo<$ExpensesTable, Expense> {
         DriftSqlType.string,
         data['${effectivePrefix}title'],
       )!,
-      peopleCount: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
-        data['${effectivePrefix}people_count'],
-      )!,
       total: attachedDatabase.typeMapping.read(
         DriftSqlType.double,
         data['${effectivePrefix}total'],
@@ -347,13 +315,11 @@ class Expense extends DataClass implements Insertable<Expense> {
   final int id;
   final int groupId;
   final String title;
-  final int peopleCount;
   final double total;
   const Expense({
     required this.id,
     required this.groupId,
     required this.title,
-    required this.peopleCount,
     required this.total,
   });
   @override
@@ -362,7 +328,6 @@ class Expense extends DataClass implements Insertable<Expense> {
     map['id'] = Variable<int>(id);
     map['group_id'] = Variable<int>(groupId);
     map['title'] = Variable<String>(title);
-    map['people_count'] = Variable<int>(peopleCount);
     map['total'] = Variable<double>(total);
     return map;
   }
@@ -372,7 +337,6 @@ class Expense extends DataClass implements Insertable<Expense> {
       id: Value(id),
       groupId: Value(groupId),
       title: Value(title),
-      peopleCount: Value(peopleCount),
       total: Value(total),
     );
   }
@@ -386,7 +350,6 @@ class Expense extends DataClass implements Insertable<Expense> {
       id: serializer.fromJson<int>(json['id']),
       groupId: serializer.fromJson<int>(json['groupId']),
       title: serializer.fromJson<String>(json['title']),
-      peopleCount: serializer.fromJson<int>(json['peopleCount']),
       total: serializer.fromJson<double>(json['total']),
     );
   }
@@ -397,32 +360,22 @@ class Expense extends DataClass implements Insertable<Expense> {
       'id': serializer.toJson<int>(id),
       'groupId': serializer.toJson<int>(groupId),
       'title': serializer.toJson<String>(title),
-      'peopleCount': serializer.toJson<int>(peopleCount),
       'total': serializer.toJson<double>(total),
     };
   }
 
-  Expense copyWith({
-    int? id,
-    int? groupId,
-    String? title,
-    int? peopleCount,
-    double? total,
-  }) => Expense(
-    id: id ?? this.id,
-    groupId: groupId ?? this.groupId,
-    title: title ?? this.title,
-    peopleCount: peopleCount ?? this.peopleCount,
-    total: total ?? this.total,
-  );
+  Expense copyWith({int? id, int? groupId, String? title, double? total}) =>
+      Expense(
+        id: id ?? this.id,
+        groupId: groupId ?? this.groupId,
+        title: title ?? this.title,
+        total: total ?? this.total,
+      );
   Expense copyWithCompanion(ExpensesCompanion data) {
     return Expense(
       id: data.id.present ? data.id.value : this.id,
       groupId: data.groupId.present ? data.groupId.value : this.groupId,
       title: data.title.present ? data.title.value : this.title,
-      peopleCount: data.peopleCount.present
-          ? data.peopleCount.value
-          : this.peopleCount,
       total: data.total.present ? data.total.value : this.total,
     );
   }
@@ -433,14 +386,13 @@ class Expense extends DataClass implements Insertable<Expense> {
           ..write('id: $id, ')
           ..write('groupId: $groupId, ')
           ..write('title: $title, ')
-          ..write('peopleCount: $peopleCount, ')
           ..write('total: $total')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, groupId, title, peopleCount, total);
+  int get hashCode => Object.hash(id, groupId, title, total);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -448,7 +400,6 @@ class Expense extends DataClass implements Insertable<Expense> {
           other.id == this.id &&
           other.groupId == this.groupId &&
           other.title == this.title &&
-          other.peopleCount == this.peopleCount &&
           other.total == this.total);
 }
 
@@ -456,36 +407,30 @@ class ExpensesCompanion extends UpdateCompanion<Expense> {
   final Value<int> id;
   final Value<int> groupId;
   final Value<String> title;
-  final Value<int> peopleCount;
   final Value<double> total;
   const ExpensesCompanion({
     this.id = const Value.absent(),
     this.groupId = const Value.absent(),
     this.title = const Value.absent(),
-    this.peopleCount = const Value.absent(),
     this.total = const Value.absent(),
   });
   ExpensesCompanion.insert({
     this.id = const Value.absent(),
     required int groupId,
     required String title,
-    required int peopleCount,
     this.total = const Value.absent(),
   }) : groupId = Value(groupId),
-       title = Value(title),
-       peopleCount = Value(peopleCount);
+       title = Value(title);
   static Insertable<Expense> custom({
     Expression<int>? id,
     Expression<int>? groupId,
     Expression<String>? title,
-    Expression<int>? peopleCount,
     Expression<double>? total,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (groupId != null) 'group_id': groupId,
       if (title != null) 'title': title,
-      if (peopleCount != null) 'people_count': peopleCount,
       if (total != null) 'total': total,
     });
   }
@@ -494,14 +439,12 @@ class ExpensesCompanion extends UpdateCompanion<Expense> {
     Value<int>? id,
     Value<int>? groupId,
     Value<String>? title,
-    Value<int>? peopleCount,
     Value<double>? total,
   }) {
     return ExpensesCompanion(
       id: id ?? this.id,
       groupId: groupId ?? this.groupId,
       title: title ?? this.title,
-      peopleCount: peopleCount ?? this.peopleCount,
       total: total ?? this.total,
     );
   }
@@ -518,9 +461,6 @@ class ExpensesCompanion extends UpdateCompanion<Expense> {
     if (title.present) {
       map['title'] = Variable<String>(title.value);
     }
-    if (peopleCount.present) {
-      map['people_count'] = Variable<int>(peopleCount.value);
-    }
     if (total.present) {
       map['total'] = Variable<double>(total.value);
     }
@@ -533,7 +473,6 @@ class ExpensesCompanion extends UpdateCompanion<Expense> {
           ..write('id: $id, ')
           ..write('groupId: $groupId, ')
           ..write('title: $title, ')
-          ..write('peopleCount: $peopleCount, ')
           ..write('total: $total')
           ..write(')'))
         .toString();
@@ -1718,7 +1657,6 @@ typedef $$ExpensesTableCreateCompanionBuilder =
       Value<int> id,
       required int groupId,
       required String title,
-      required int peopleCount,
       Value<double> total,
     });
 typedef $$ExpensesTableUpdateCompanionBuilder =
@@ -1726,7 +1664,6 @@ typedef $$ExpensesTableUpdateCompanionBuilder =
       Value<int> id,
       Value<int> groupId,
       Value<String> title,
-      Value<int> peopleCount,
       Value<double> total,
     });
 
@@ -1815,11 +1752,6 @@ class $$ExpensesTableFilterComposer
 
   ColumnFilters<String> get title => $composableBuilder(
     column: $table.title,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<int> get peopleCount => $composableBuilder(
-    column: $table.peopleCount,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -1921,11 +1853,6 @@ class $$ExpensesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<int> get peopleCount => $composableBuilder(
-    column: $table.peopleCount,
-    builder: (column) => ColumnOrderings(column),
-  );
-
   ColumnOrderings<double> get total => $composableBuilder(
     column: $table.total,
     builder: (column) => ColumnOrderings(column),
@@ -1969,11 +1896,6 @@ class $$ExpensesTableAnnotationComposer
 
   GeneratedColumn<String> get title =>
       $composableBuilder(column: $table.title, builder: (column) => column);
-
-  GeneratedColumn<int> get peopleCount => $composableBuilder(
-    column: $table.peopleCount,
-    builder: (column) => column,
-  );
 
   GeneratedColumn<double> get total =>
       $composableBuilder(column: $table.total, builder: (column) => column);
@@ -2088,13 +2010,11 @@ class $$ExpensesTableTableManager
                 Value<int> id = const Value.absent(),
                 Value<int> groupId = const Value.absent(),
                 Value<String> title = const Value.absent(),
-                Value<int> peopleCount = const Value.absent(),
                 Value<double> total = const Value.absent(),
               }) => ExpensesCompanion(
                 id: id,
                 groupId: groupId,
                 title: title,
-                peopleCount: peopleCount,
                 total: total,
               ),
           createCompanionCallback:
@@ -2102,13 +2022,11 @@ class $$ExpensesTableTableManager
                 Value<int> id = const Value.absent(),
                 required int groupId,
                 required String title,
-                required int peopleCount,
                 Value<double> total = const Value.absent(),
               }) => ExpensesCompanion.insert(
                 id: id,
                 groupId: groupId,
                 title: title,
-                peopleCount: peopleCount,
                 total: total,
               ),
           withReferenceMapper: (p0) => p0

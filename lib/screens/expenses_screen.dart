@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/database/app_database.dart';
 import '../widgets/create_expense_dialog.dart';
 import '../models/expense_model.dart';
 import '../models/person_model.dart';
@@ -197,7 +198,7 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
 
                             children: [
-                              Text("People: ${expense.peopleCount}"),
+                              Text("People: TO DO"),
 
                               const SizedBox(height: 10),
 
@@ -278,7 +279,22 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                   final ExpenseModel expense = result;
                   expense.groupId = widget.groupId;
 
-                  await database.insertExpense(expense.toCompanion());
+                  final expenseId = await database.insertExpense(
+                    expense.toCompanion(),
+                  );
+
+                  final persons = await database.getPersonsForGroup(
+                    widget.groupId,
+                  );
+
+                  for (final person in persons) {
+                    await database.insertExpenseParticipant(
+                      ExpenseParticipantsCompanion.insert(
+                        expenseId: expenseId,
+                        personId: person.id,
+                      ),
+                    );
+                  }
 
                   await loadExpenses();
                 },

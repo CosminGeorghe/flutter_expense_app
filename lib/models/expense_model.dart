@@ -8,23 +8,12 @@ class ExpenseModel {
 
   String title;
 
-  int peopleCount;
-
   double total;
-
-  double get splitAmount {
-    if (peopleCount == 0) {
-      return 0;
-    }
-
-    return total / peopleCount;
-  }
 
   ExpenseModel({
     this.id,
     required this.groupId,
     required this.title,
-    required this.peopleCount,
     required this.total,
   });
 
@@ -33,7 +22,6 @@ class ExpenseModel {
       'id': id,
       'groupId': groupId,
       'title': title,
-      'people_count': peopleCount,
       'total': total,
     };
   }
@@ -43,7 +31,6 @@ class ExpenseModel {
       id: map['id'],
       groupId: map['groupId'],
       title: map['title'],
-      peopleCount: map['people_count'],
       total: map['total'],
     );
   }
@@ -53,7 +40,6 @@ class ExpenseModel {
       id: dbExpense.id,
       groupId: dbExpense.groupId,
       title: dbExpense.title,
-      peopleCount: dbExpense.peopleCount,
       total: dbExpense.total,
     );
   }
@@ -65,8 +51,6 @@ class ExpenseModel {
       groupId: Value(groupId),
 
       title: Value(title),
-
-      peopleCount: Value(peopleCount),
 
       total: Value(total),
     );

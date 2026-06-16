@@ -17,8 +17,6 @@ class Expenses extends Table {
 
   TextColumn get title => text()();
 
-  IntColumn get peopleCount => integer()();
-
   RealColumn get total => real().withDefault(const Constant(0))();
 }
 

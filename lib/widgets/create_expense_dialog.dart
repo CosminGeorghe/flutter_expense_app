@@ -17,13 +17,10 @@ class _CreateExpenseDialogState extends State<CreateExpenseDialog> {
 
   final TextEditingController totalController = TextEditingController();
 
-  final TextEditingController peopleController = TextEditingController();
-
   @override
   void dispose() {
     titleController.dispose();
     totalController.dispose();
-    peopleController.dispose();
 
     super.dispose();
   }
@@ -83,29 +80,6 @@ class _CreateExpenseDialogState extends State<CreateExpenseDialog> {
                     return null;
                   },
                 ),
-
-                const SizedBox(height: 15),
-
-                TextFormField(
-                  controller: peopleController,
-
-                  keyboardType: TextInputType.number,
-
-                  decoration: const InputDecoration(
-                    labelText: "Number of People",
-                    border: OutlineInputBorder(),
-                  ),
-
-                  validator: (value) {
-                    final people = int.tryParse(value ?? "");
-
-                    if (people == null || people <= 0) {
-                      return "Enter valid number";
-                    }
-
-                    return null;
-                  },
-                ),
               ],
             ),
           ),
@@ -134,8 +108,6 @@ class _CreateExpenseDialogState extends State<CreateExpenseDialog> {
                 title: titleController.text.trim(),
 
                 groupId: widget.groupId,
-
-                peopleCount: int.parse(peopleController.text),
 
                 total: double.parse(totalController.text),
               ),
