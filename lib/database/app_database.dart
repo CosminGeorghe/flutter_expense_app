@@ -18,6 +18,8 @@ class Expenses extends Table {
   TextColumn get title => text()();
 
   RealColumn get total => real().withDefault(const Constant(0))();
+
+  TextColumn get splitMode => text().withDefault(const Constant('equal'))();
 }
 
 class Products extends Table {
@@ -49,6 +51,8 @@ class Persons extends Table {
 }
 
 class ExpenseParticipants extends Table {
+  IntColumn get id => integer().autoIncrement()();
+
   IntColumn get expenseId =>
       integer().references(Expenses, #id, onDelete: KeyAction.cascade)();
 
@@ -56,32 +60,58 @@ class ExpenseParticipants extends Table {
       integer().references(Persons, #id, onDelete: KeyAction.cascade)();
 
   @override
-  Set<Column> get primaryKey => {expenseId, personId};
+  List<Set<Column>> get uniqueKeys => [
+    {expenseId, personId},
+  ];
+}
+
+class ExpenseParticipantShares extends Table {
+  IntColumn get id => integer().autoIncrement()();
+
+  IntColumn get expenseParticipantId => integer().references(
+    ExpenseParticipants,
+    #id,
+    onDelete: KeyAction.cascade,
+  )();
+
+  RealColumn get shareValue => real()();
+
+  @override
+  List<Set<Column>> get uniqueKeys => [
+    {expenseParticipantId},
+  ];
 }
 
 @DriftDatabase(
-  tables: [Expenses, Products, Groups, Persons, ExpenseParticipants],
+  tables: [
+    Expenses,
+    Products,
+    Groups,
+    Persons,
+    ExpenseParticipants,
+    ExpenseParticipantShares,
+  ],
 )
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 1;
 
-  @override
-  MigrationStrategy get migration => MigrationStrategy(
-    onUpgrade: (Migrator m, int from, int to) async {
-      if (from < 2) {
-        await m.addColumn(expenses, expenses.total);
-      }
-      if (from < 3) {
-        await m.addColumn(expenses, expenses.groupId);
+  // @override
+  // MigrationStrategy get migration => MigrationStrategy(
+  //   onUpgrade: (Migrator m, int from, int to) async {
+  //     if (from < 2) {
+  //       await m.addColumn(expenses, expenses.total);
+  //     }
+  //     if (from < 3) {
+  //       await m.addColumn(expenses, expenses.groupId);
 
-        await m.createTable(groups);
-        await m.createTable(persons);
-      }
-    },
-  );
+  //       await m.createTable(groups);
+  //       await m.createTable(persons);
+  //     }
+  //   },
+  // );
 
   Future<int> insertExpense(ExpensesCompanion expense) {
     return into(expenses).insert(expense);
@@ -93,6 +123,15 @@ class AppDatabase extends _$AppDatabase {
 
   Future<bool> updateExpense(ExpensesCompanion expense) {
     return update(expenses).replace(expense);
+  }
+
+  Future<int> updateExpenseSplitMode({
+    required int expenseId,
+    required String splitMode,
+  }) {
+    return (update(expenses)..where((e) => e.id.equals(expenseId))).write(
+      ExpensesCompanion(splitMode: Value(splitMode)),
+    );
   }
 
   Future<Expense?> getExpenseById(int expenseId) {
@@ -189,6 +228,16 @@ class AppDatabase extends _$AppDatabase {
     return into(expenseParticipants).insert(participant);
   }
 
+  Future<ExpenseParticipant?> getExpenseParticipant({
+    required int expenseId,
+    required int personId,
+  }) {
+    return (select(expenseParticipants)..where(
+          (p) => p.expenseId.equals(expenseId) & p.personId.equals(personId),
+        ))
+        .getSingleOrNull();
+  }
+
   Future<List<ExpenseParticipant>> getParticipantsForExpense(int expenseId) {
     return (select(
       expenseParticipants,
@@ -210,18 +259,47 @@ class AppDatabase extends _$AppDatabase {
       expenseParticipants,
     )..where((p) => p.expenseId.equals(expenseId))).go();
   }
+
+  Future<int> insertExpenseParticipantShare(
+    ExpenseParticipantSharesCompanion share,
+  ) {
+    return into(expenseParticipantShares).insert(share);
+  }
+
+  Future<bool> updateExpenseParticipantShare(
+    ExpenseParticipantSharesCompanion share,
+  ) {
+    return update(expenseParticipantShares).replace(share);
+  }
+
+  Future<List<ExpenseParticipantShare>> getSharesForExpense(int expenseId) {
+    final query = select(expenseParticipantShares).join([
+      innerJoin(
+        expenseParticipants,
+        expenseParticipants.id.equalsExp(
+          expenseParticipantShares.expenseParticipantId,
+        ),
+      ),
+    ])..where(expenseParticipants.expenseId.equals(expenseId));
+
+    return query.map((row) {
+      return row.readTable(expenseParticipantShares);
+    }).get();
+  }
+
 }
 
-// LazyDatabase _openConnection() {
-//   return LazyDatabase(() async {
-//     final dbFolder = await getApplicationDocumentsDirectory();
+LazyDatabase _openConnection() {
+  return LazyDatabase(() async {
+    final dbFolder = await getApplicationDocumentsDirectory();
 
-//     final file = File(p.join(dbFolder.path, 'app.sqlite'));
+    final file = File(p.join(dbFolder.path, 'app.sqlite'));
 
-//     return NativeDatabase(file);
-//   });
-// }
-
-QueryExecutor _openConnection() {
-  return driftDatabase(name: 'app_database');
+    return NativeDatabase(
+      file,
+      setup: (db) {
+        db.execute('PRAGMA foreign_keys = ON;');
+      },
+    );
+  });
 }

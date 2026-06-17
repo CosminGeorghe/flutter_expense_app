@@ -25,6 +25,8 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
 
   List<ProductModel> products = [];
 
+  int participantCount = 0;
+
   bool isEditingTitle = false;
 
   late final TextEditingController titleController;
@@ -127,6 +129,16 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
     });
   }
 
+  Future<void> loadParticipantCount() async {
+    final participants = await database.getParticipantsForExpense(
+      widget.expenseId,
+    );
+
+    setState(() {
+      participantCount = participants.length;
+    });
+  }
+
   Future<void> addProduct() async {
     final product = ProductModel(
       expenseId: widget.expenseId,
@@ -177,6 +189,7 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
 
     loadExpense();
     loadProducts();
+    loadParticipantCount();
   }
 
   @override
@@ -359,54 +372,40 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
 
                             children: [
                               const Text(
-                                "Participants number",
+                                "Participants",
                                 style: TextStyle(fontWeight: FontWeight.bold),
                               ),
 
-                              SizedBox(
-                                width: 60,
+                              Row(
+                                children: [
+                                  Text(participantCount.toString()),
 
-                                child: TextField(
-                                  controller: peopleController,
-                                  keyboardType: TextInputType.number,
+                                  const SizedBox(width: 8),
 
-                                  textAlign: TextAlign.center,
+                                  IconButton(
+                                    icon: const Icon(Icons.edit),
 
-                                  onChanged: (value) async {
-                                    final people = int.tryParse(value);
+                                    onPressed: () async {
+                                      await showDialog(
+                                        context: context,
 
-                                    if (people == null || people <= 0) {
-                                      return;
-                                    }
+                                        builder: (_) =>
+                                            ManageParticipantsDialog(
+                                              expenseId: widget.expenseId,
+                                              groupId: expense!.groupId,
+                                            ),
+                                      );
 
-                                    expense!.peopleCount = people;
+                                      await loadParticipantCount();
 
-                                    setState(() {});
-
-                                    await database.updateExpense(
-                                      expense!.toCompanion(),
-                                    );
-                                  },
-                                ),
+                                      setState(() {});
+                                    },
+                                  ),
+                                ],
                               ),
                             ],
                           ),
-
-                          ElevatedButton(
-                            onPressed: () async {
-                              await showDialog(
-                                context: context,
-
-                                builder: (_) => ManageParticipantsDialog(
-                                  expenseId: widget.expenseId,
-                                  groupId: expense!.groupId,
-                                ),
-                              );
-                            },
-
-                            child: const Text('Manage Participants'),
-                          ),
-
+                          
                           const Divider(height: 24),
 
                           Row(
@@ -422,7 +421,7 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
                               ),
 
                               Text(
-                                "${expense!.splitAmount.toStringAsFixed(2)} RON",
+                                "to do split RON",
                                 style: const TextStyle(
                                   fontWeight: FontWeight.bold,
                                   fontSize: 16,

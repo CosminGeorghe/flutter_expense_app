@@ -238,8 +238,20 @@ class $ExpensesTable extends Expenses with TableInfo<$ExpensesTable, Expense> {
     requiredDuringInsert: false,
     defaultValue: const Constant(0),
   );
+  static const VerificationMeta _splitModeMeta = const VerificationMeta(
+    'splitMode',
+  );
   @override
-  List<GeneratedColumn> get $columns => [id, groupId, title, total];
+  late final GeneratedColumn<String> splitMode = GeneratedColumn<String>(
+    'split_mode',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('equal'),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [id, groupId, title, total, splitMode];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -277,6 +289,12 @@ class $ExpensesTable extends Expenses with TableInfo<$ExpensesTable, Expense> {
         total.isAcceptableOrUnknown(data['total']!, _totalMeta),
       );
     }
+    if (data.containsKey('split_mode')) {
+      context.handle(
+        _splitModeMeta,
+        splitMode.isAcceptableOrUnknown(data['split_mode']!, _splitModeMeta),
+      );
+    }
     return context;
   }
 
@@ -302,6 +320,10 @@ class $ExpensesTable extends Expenses with TableInfo<$ExpensesTable, Expense> {
         DriftSqlType.double,
         data['${effectivePrefix}total'],
       )!,
+      splitMode: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}split_mode'],
+      )!,
     );
   }
 
@@ -316,11 +338,13 @@ class Expense extends DataClass implements Insertable<Expense> {
   final int groupId;
   final String title;
   final double total;
+  final String splitMode;
   const Expense({
     required this.id,
     required this.groupId,
     required this.title,
     required this.total,
+    required this.splitMode,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -329,6 +353,7 @@ class Expense extends DataClass implements Insertable<Expense> {
     map['group_id'] = Variable<int>(groupId);
     map['title'] = Variable<String>(title);
     map['total'] = Variable<double>(total);
+    map['split_mode'] = Variable<String>(splitMode);
     return map;
   }
 
@@ -338,6 +363,7 @@ class Expense extends DataClass implements Insertable<Expense> {
       groupId: Value(groupId),
       title: Value(title),
       total: Value(total),
+      splitMode: Value(splitMode),
     );
   }
 
@@ -351,6 +377,7 @@ class Expense extends DataClass implements Insertable<Expense> {
       groupId: serializer.fromJson<int>(json['groupId']),
       title: serializer.fromJson<String>(json['title']),
       total: serializer.fromJson<double>(json['total']),
+      splitMode: serializer.fromJson<String>(json['splitMode']),
     );
   }
   @override
@@ -361,22 +388,30 @@ class Expense extends DataClass implements Insertable<Expense> {
       'groupId': serializer.toJson<int>(groupId),
       'title': serializer.toJson<String>(title),
       'total': serializer.toJson<double>(total),
+      'splitMode': serializer.toJson<String>(splitMode),
     };
   }
 
-  Expense copyWith({int? id, int? groupId, String? title, double? total}) =>
-      Expense(
-        id: id ?? this.id,
-        groupId: groupId ?? this.groupId,
-        title: title ?? this.title,
-        total: total ?? this.total,
-      );
+  Expense copyWith({
+    int? id,
+    int? groupId,
+    String? title,
+    double? total,
+    String? splitMode,
+  }) => Expense(
+    id: id ?? this.id,
+    groupId: groupId ?? this.groupId,
+    title: title ?? this.title,
+    total: total ?? this.total,
+    splitMode: splitMode ?? this.splitMode,
+  );
   Expense copyWithCompanion(ExpensesCompanion data) {
     return Expense(
       id: data.id.present ? data.id.value : this.id,
       groupId: data.groupId.present ? data.groupId.value : this.groupId,
       title: data.title.present ? data.title.value : this.title,
       total: data.total.present ? data.total.value : this.total,
+      splitMode: data.splitMode.present ? data.splitMode.value : this.splitMode,
     );
   }
 
@@ -386,13 +421,14 @@ class Expense extends DataClass implements Insertable<Expense> {
           ..write('id: $id, ')
           ..write('groupId: $groupId, ')
           ..write('title: $title, ')
-          ..write('total: $total')
+          ..write('total: $total, ')
+          ..write('splitMode: $splitMode')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, groupId, title, total);
+  int get hashCode => Object.hash(id, groupId, title, total, splitMode);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -400,7 +436,8 @@ class Expense extends DataClass implements Insertable<Expense> {
           other.id == this.id &&
           other.groupId == this.groupId &&
           other.title == this.title &&
-          other.total == this.total);
+          other.total == this.total &&
+          other.splitMode == this.splitMode);
 }
 
 class ExpensesCompanion extends UpdateCompanion<Expense> {
@@ -408,17 +445,20 @@ class ExpensesCompanion extends UpdateCompanion<Expense> {
   final Value<int> groupId;
   final Value<String> title;
   final Value<double> total;
+  final Value<String> splitMode;
   const ExpensesCompanion({
     this.id = const Value.absent(),
     this.groupId = const Value.absent(),
     this.title = const Value.absent(),
     this.total = const Value.absent(),
+    this.splitMode = const Value.absent(),
   });
   ExpensesCompanion.insert({
     this.id = const Value.absent(),
     required int groupId,
     required String title,
     this.total = const Value.absent(),
+    this.splitMode = const Value.absent(),
   }) : groupId = Value(groupId),
        title = Value(title);
   static Insertable<Expense> custom({
@@ -426,12 +466,14 @@ class ExpensesCompanion extends UpdateCompanion<Expense> {
     Expression<int>? groupId,
     Expression<String>? title,
     Expression<double>? total,
+    Expression<String>? splitMode,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (groupId != null) 'group_id': groupId,
       if (title != null) 'title': title,
       if (total != null) 'total': total,
+      if (splitMode != null) 'split_mode': splitMode,
     });
   }
 
@@ -440,12 +482,14 @@ class ExpensesCompanion extends UpdateCompanion<Expense> {
     Value<int>? groupId,
     Value<String>? title,
     Value<double>? total,
+    Value<String>? splitMode,
   }) {
     return ExpensesCompanion(
       id: id ?? this.id,
       groupId: groupId ?? this.groupId,
       title: title ?? this.title,
       total: total ?? this.total,
+      splitMode: splitMode ?? this.splitMode,
     );
   }
 
@@ -464,6 +508,9 @@ class ExpensesCompanion extends UpdateCompanion<Expense> {
     if (total.present) {
       map['total'] = Variable<double>(total.value);
     }
+    if (splitMode.present) {
+      map['split_mode'] = Variable<String>(splitMode.value);
+    }
     return map;
   }
 
@@ -473,7 +520,8 @@ class ExpensesCompanion extends UpdateCompanion<Expense> {
           ..write('id: $id, ')
           ..write('groupId: $groupId, ')
           ..write('title: $title, ')
-          ..write('total: $total')
+          ..write('total: $total, ')
+          ..write('splitMode: $splitMode')
           ..write(')'))
         .toString();
   }
@@ -1075,6 +1123,19 @@ class $ExpenseParticipantsTable extends ExpenseParticipants
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
   $ExpenseParticipantsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
   static const VerificationMeta _expenseIdMeta = const VerificationMeta(
     'expenseId',
   );
@@ -1104,7 +1165,7 @@ class $ExpenseParticipantsTable extends ExpenseParticipants
     ),
   );
   @override
-  List<GeneratedColumn> get $columns => [expenseId, personId];
+  List<GeneratedColumn> get $columns => [id, expenseId, personId];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -1117,6 +1178,9 @@ class $ExpenseParticipantsTable extends ExpenseParticipants
   }) {
     final context = VerificationContext();
     final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
     if (data.containsKey('expense_id')) {
       context.handle(
         _expenseIdMeta,
@@ -1137,11 +1201,19 @@ class $ExpenseParticipantsTable extends ExpenseParticipants
   }
 
   @override
-  Set<GeneratedColumn> get $primaryKey => {expenseId, personId};
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  List<Set<GeneratedColumn>> get uniqueKeys => [
+    {expenseId, personId},
+  ];
   @override
   ExpenseParticipant map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return ExpenseParticipant(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
       expenseId: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}expense_id'],
@@ -1161,12 +1233,18 @@ class $ExpenseParticipantsTable extends ExpenseParticipants
 
 class ExpenseParticipant extends DataClass
     implements Insertable<ExpenseParticipant> {
+  final int id;
   final int expenseId;
   final int personId;
-  const ExpenseParticipant({required this.expenseId, required this.personId});
+  const ExpenseParticipant({
+    required this.id,
+    required this.expenseId,
+    required this.personId,
+  });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
     map['expense_id'] = Variable<int>(expenseId);
     map['person_id'] = Variable<int>(personId);
     return map;
@@ -1174,6 +1252,7 @@ class ExpenseParticipant extends DataClass
 
   ExpenseParticipantsCompanion toCompanion(bool nullToAbsent) {
     return ExpenseParticipantsCompanion(
+      id: Value(id),
       expenseId: Value(expenseId),
       personId: Value(personId),
     );
@@ -1185,6 +1264,7 @@ class ExpenseParticipant extends DataClass
   }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return ExpenseParticipant(
+      id: serializer.fromJson<int>(json['id']),
       expenseId: serializer.fromJson<int>(json['expenseId']),
       personId: serializer.fromJson<int>(json['personId']),
     );
@@ -1193,18 +1273,21 @@ class ExpenseParticipant extends DataClass
   Map<String, dynamic> toJson({ValueSerializer? serializer}) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
       'expenseId': serializer.toJson<int>(expenseId),
       'personId': serializer.toJson<int>(personId),
     };
   }
 
-  ExpenseParticipant copyWith({int? expenseId, int? personId}) =>
+  ExpenseParticipant copyWith({int? id, int? expenseId, int? personId}) =>
       ExpenseParticipant(
+        id: id ?? this.id,
         expenseId: expenseId ?? this.expenseId,
         personId: personId ?? this.personId,
       );
   ExpenseParticipant copyWithCompanion(ExpenseParticipantsCompanion data) {
     return ExpenseParticipant(
+      id: data.id.present ? data.id.value : this.id,
       expenseId: data.expenseId.present ? data.expenseId.value : this.expenseId,
       personId: data.personId.present ? data.personId.value : this.personId,
     );
@@ -1213,6 +1296,7 @@ class ExpenseParticipant extends DataClass
   @override
   String toString() {
     return (StringBuffer('ExpenseParticipant(')
+          ..write('id: $id, ')
           ..write('expenseId: $expenseId, ')
           ..write('personId: $personId')
           ..write(')'))
@@ -1220,65 +1304,66 @@ class ExpenseParticipant extends DataClass
   }
 
   @override
-  int get hashCode => Object.hash(expenseId, personId);
+  int get hashCode => Object.hash(id, expenseId, personId);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is ExpenseParticipant &&
+          other.id == this.id &&
           other.expenseId == this.expenseId &&
           other.personId == this.personId);
 }
 
 class ExpenseParticipantsCompanion extends UpdateCompanion<ExpenseParticipant> {
+  final Value<int> id;
   final Value<int> expenseId;
   final Value<int> personId;
-  final Value<int> rowid;
   const ExpenseParticipantsCompanion({
+    this.id = const Value.absent(),
     this.expenseId = const Value.absent(),
     this.personId = const Value.absent(),
-    this.rowid = const Value.absent(),
   });
   ExpenseParticipantsCompanion.insert({
+    this.id = const Value.absent(),
     required int expenseId,
     required int personId,
-    this.rowid = const Value.absent(),
   }) : expenseId = Value(expenseId),
        personId = Value(personId);
   static Insertable<ExpenseParticipant> custom({
+    Expression<int>? id,
     Expression<int>? expenseId,
     Expression<int>? personId,
-    Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
+      if (id != null) 'id': id,
       if (expenseId != null) 'expense_id': expenseId,
       if (personId != null) 'person_id': personId,
-      if (rowid != null) 'rowid': rowid,
     });
   }
 
   ExpenseParticipantsCompanion copyWith({
+    Value<int>? id,
     Value<int>? expenseId,
     Value<int>? personId,
-    Value<int>? rowid,
   }) {
     return ExpenseParticipantsCompanion(
+      id: id ?? this.id,
       expenseId: expenseId ?? this.expenseId,
       personId: personId ?? this.personId,
-      rowid: rowid ?? this.rowid,
     );
   }
 
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
     if (expenseId.present) {
       map['expense_id'] = Variable<int>(expenseId.value);
     }
     if (personId.present) {
       map['person_id'] = Variable<int>(personId.value);
-    }
-    if (rowid.present) {
-      map['rowid'] = Variable<int>(rowid.value);
     }
     return map;
   }
@@ -1286,9 +1371,286 @@ class ExpenseParticipantsCompanion extends UpdateCompanion<ExpenseParticipant> {
   @override
   String toString() {
     return (StringBuffer('ExpenseParticipantsCompanion(')
+          ..write('id: $id, ')
           ..write('expenseId: $expenseId, ')
-          ..write('personId: $personId, ')
-          ..write('rowid: $rowid')
+          ..write('personId: $personId')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $ExpenseParticipantSharesTable extends ExpenseParticipantShares
+    with TableInfo<$ExpenseParticipantSharesTable, ExpenseParticipantShare> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ExpenseParticipantSharesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _expenseParticipantIdMeta =
+      const VerificationMeta('expenseParticipantId');
+  @override
+  late final GeneratedColumn<int> expenseParticipantId = GeneratedColumn<int>(
+    'expense_participant_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES expense_participants (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _shareValueMeta = const VerificationMeta(
+    'shareValue',
+  );
+  @override
+  late final GeneratedColumn<double> shareValue = GeneratedColumn<double>(
+    'share_value',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [id, expenseParticipantId, shareValue];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'expense_participant_shares';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ExpenseParticipantShare> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('expense_participant_id')) {
+      context.handle(
+        _expenseParticipantIdMeta,
+        expenseParticipantId.isAcceptableOrUnknown(
+          data['expense_participant_id']!,
+          _expenseParticipantIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_expenseParticipantIdMeta);
+    }
+    if (data.containsKey('share_value')) {
+      context.handle(
+        _shareValueMeta,
+        shareValue.isAcceptableOrUnknown(data['share_value']!, _shareValueMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_shareValueMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  List<Set<GeneratedColumn>> get uniqueKeys => [
+    {expenseParticipantId},
+  ];
+  @override
+  ExpenseParticipantShare map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ExpenseParticipantShare(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      expenseParticipantId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}expense_participant_id'],
+      )!,
+      shareValue: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}share_value'],
+      )!,
+    );
+  }
+
+  @override
+  $ExpenseParticipantSharesTable createAlias(String alias) {
+    return $ExpenseParticipantSharesTable(attachedDatabase, alias);
+  }
+}
+
+class ExpenseParticipantShare extends DataClass
+    implements Insertable<ExpenseParticipantShare> {
+  final int id;
+  final int expenseParticipantId;
+  final double shareValue;
+  const ExpenseParticipantShare({
+    required this.id,
+    required this.expenseParticipantId,
+    required this.shareValue,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['expense_participant_id'] = Variable<int>(expenseParticipantId);
+    map['share_value'] = Variable<double>(shareValue);
+    return map;
+  }
+
+  ExpenseParticipantSharesCompanion toCompanion(bool nullToAbsent) {
+    return ExpenseParticipantSharesCompanion(
+      id: Value(id),
+      expenseParticipantId: Value(expenseParticipantId),
+      shareValue: Value(shareValue),
+    );
+  }
+
+  factory ExpenseParticipantShare.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ExpenseParticipantShare(
+      id: serializer.fromJson<int>(json['id']),
+      expenseParticipantId: serializer.fromJson<int>(
+        json['expenseParticipantId'],
+      ),
+      shareValue: serializer.fromJson<double>(json['shareValue']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'expenseParticipantId': serializer.toJson<int>(expenseParticipantId),
+      'shareValue': serializer.toJson<double>(shareValue),
+    };
+  }
+
+  ExpenseParticipantShare copyWith({
+    int? id,
+    int? expenseParticipantId,
+    double? shareValue,
+  }) => ExpenseParticipantShare(
+    id: id ?? this.id,
+    expenseParticipantId: expenseParticipantId ?? this.expenseParticipantId,
+    shareValue: shareValue ?? this.shareValue,
+  );
+  ExpenseParticipantShare copyWithCompanion(
+    ExpenseParticipantSharesCompanion data,
+  ) {
+    return ExpenseParticipantShare(
+      id: data.id.present ? data.id.value : this.id,
+      expenseParticipantId: data.expenseParticipantId.present
+          ? data.expenseParticipantId.value
+          : this.expenseParticipantId,
+      shareValue: data.shareValue.present
+          ? data.shareValue.value
+          : this.shareValue,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ExpenseParticipantShare(')
+          ..write('id: $id, ')
+          ..write('expenseParticipantId: $expenseParticipantId, ')
+          ..write('shareValue: $shareValue')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, expenseParticipantId, shareValue);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ExpenseParticipantShare &&
+          other.id == this.id &&
+          other.expenseParticipantId == this.expenseParticipantId &&
+          other.shareValue == this.shareValue);
+}
+
+class ExpenseParticipantSharesCompanion
+    extends UpdateCompanion<ExpenseParticipantShare> {
+  final Value<int> id;
+  final Value<int> expenseParticipantId;
+  final Value<double> shareValue;
+  const ExpenseParticipantSharesCompanion({
+    this.id = const Value.absent(),
+    this.expenseParticipantId = const Value.absent(),
+    this.shareValue = const Value.absent(),
+  });
+  ExpenseParticipantSharesCompanion.insert({
+    this.id = const Value.absent(),
+    required int expenseParticipantId,
+    required double shareValue,
+  }) : expenseParticipantId = Value(expenseParticipantId),
+       shareValue = Value(shareValue);
+  static Insertable<ExpenseParticipantShare> custom({
+    Expression<int>? id,
+    Expression<int>? expenseParticipantId,
+    Expression<double>? shareValue,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (expenseParticipantId != null)
+        'expense_participant_id': expenseParticipantId,
+      if (shareValue != null) 'share_value': shareValue,
+    });
+  }
+
+  ExpenseParticipantSharesCompanion copyWith({
+    Value<int>? id,
+    Value<int>? expenseParticipantId,
+    Value<double>? shareValue,
+  }) {
+    return ExpenseParticipantSharesCompanion(
+      id: id ?? this.id,
+      expenseParticipantId: expenseParticipantId ?? this.expenseParticipantId,
+      shareValue: shareValue ?? this.shareValue,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (expenseParticipantId.present) {
+      map['expense_participant_id'] = Variable<int>(expenseParticipantId.value);
+    }
+    if (shareValue.present) {
+      map['share_value'] = Variable<double>(shareValue.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ExpenseParticipantSharesCompanion(')
+          ..write('id: $id, ')
+          ..write('expenseParticipantId: $expenseParticipantId, ')
+          ..write('shareValue: $shareValue')
           ..write(')'))
         .toString();
   }
@@ -1303,6 +1665,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $PersonsTable persons = $PersonsTable(this);
   late final $ExpenseParticipantsTable expenseParticipants =
       $ExpenseParticipantsTable(this);
+  late final $ExpenseParticipantSharesTable expenseParticipantShares =
+      $ExpenseParticipantSharesTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -1313,6 +1677,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     products,
     persons,
     expenseParticipants,
+    expenseParticipantShares,
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
@@ -1350,6 +1715,15 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         limitUpdateKind: UpdateKind.delete,
       ),
       result: [TableUpdate('expense_participants', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'expense_participants',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [
+        TableUpdate('expense_participant_shares', kind: UpdateKind.delete),
+      ],
     ),
   ]);
 }
@@ -1658,6 +2032,7 @@ typedef $$ExpensesTableCreateCompanionBuilder =
       required int groupId,
       required String title,
       Value<double> total,
+      Value<String> splitMode,
     });
 typedef $$ExpensesTableUpdateCompanionBuilder =
     ExpensesCompanion Function({
@@ -1665,6 +2040,7 @@ typedef $$ExpensesTableUpdateCompanionBuilder =
       Value<int> groupId,
       Value<String> title,
       Value<double> total,
+      Value<String> splitMode,
     });
 
 final class $$ExpensesTableReferences
@@ -1757,6 +2133,11 @@ class $$ExpensesTableFilterComposer
 
   ColumnFilters<double> get total => $composableBuilder(
     column: $table.total,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get splitMode => $composableBuilder(
+    column: $table.splitMode,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -1858,6 +2239,11 @@ class $$ExpensesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get splitMode => $composableBuilder(
+    column: $table.splitMode,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   $$GroupsTableOrderingComposer get groupId {
     final $$GroupsTableOrderingComposer composer = $composerBuilder(
       composer: this,
@@ -1899,6 +2285,9 @@ class $$ExpensesTableAnnotationComposer
 
   GeneratedColumn<double> get total =>
       $composableBuilder(column: $table.total, builder: (column) => column);
+
+  GeneratedColumn<String> get splitMode =>
+      $composableBuilder(column: $table.splitMode, builder: (column) => column);
 
   $$GroupsTableAnnotationComposer get groupId {
     final $$GroupsTableAnnotationComposer composer = $composerBuilder(
@@ -2011,11 +2400,13 @@ class $$ExpensesTableTableManager
                 Value<int> groupId = const Value.absent(),
                 Value<String> title = const Value.absent(),
                 Value<double> total = const Value.absent(),
+                Value<String> splitMode = const Value.absent(),
               }) => ExpensesCompanion(
                 id: id,
                 groupId: groupId,
                 title: title,
                 total: total,
+                splitMode: splitMode,
               ),
           createCompanionCallback:
               ({
@@ -2023,11 +2414,13 @@ class $$ExpensesTableTableManager
                 required int groupId,
                 required String title,
                 Value<double> total = const Value.absent(),
+                Value<String> splitMode = const Value.absent(),
               }) => ExpensesCompanion.insert(
                 id: id,
                 groupId: groupId,
                 title: title,
                 total: total,
+                splitMode: splitMode,
               ),
           withReferenceMapper: (p0) => p0
               .map(
@@ -2834,15 +3227,15 @@ typedef $$PersonsTableProcessedTableManager =
     >;
 typedef $$ExpenseParticipantsTableCreateCompanionBuilder =
     ExpenseParticipantsCompanion Function({
+      Value<int> id,
       required int expenseId,
       required int personId,
-      Value<int> rowid,
     });
 typedef $$ExpenseParticipantsTableUpdateCompanionBuilder =
     ExpenseParticipantsCompanion Function({
+      Value<int> id,
       Value<int> expenseId,
       Value<int> personId,
-      Value<int> rowid,
     });
 
 final class $$ExpenseParticipantsTableReferences
@@ -2895,6 +3288,37 @@ final class $$ExpenseParticipantsTableReferences
       manager.$state.copyWith(prefetchedData: [item]),
     );
   }
+
+  static MultiTypedResultKey<
+    $ExpenseParticipantSharesTable,
+    List<ExpenseParticipantShare>
+  >
+  _expenseParticipantSharesRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.expenseParticipantShares,
+        aliasName: $_aliasNameGenerator(
+          db.expenseParticipants.id,
+          db.expenseParticipantShares.expenseParticipantId,
+        ),
+      );
+
+  $$ExpenseParticipantSharesTableProcessedTableManager
+  get expenseParticipantSharesRefs {
+    final manager =
+        $$ExpenseParticipantSharesTableTableManager(
+          $_db,
+          $_db.expenseParticipantShares,
+        ).filter(
+          (f) => f.expenseParticipantId.id.sqlEquals($_itemColumn<int>('id')!),
+        );
+
+    final cache = $_typedResult.readTableOrNull(
+      _expenseParticipantSharesRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
 }
 
 class $$ExpenseParticipantsTableFilterComposer
@@ -2906,6 +3330,11 @@ class $$ExpenseParticipantsTableFilterComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
   $$ExpensesTableFilterComposer get expenseId {
     final $$ExpensesTableFilterComposer composer = $composerBuilder(
       composer: this,
@@ -2951,6 +3380,33 @@ class $$ExpenseParticipantsTableFilterComposer
     );
     return composer;
   }
+
+  Expression<bool> expenseParticipantSharesRefs(
+    Expression<bool> Function($$ExpenseParticipantSharesTableFilterComposer f)
+    f,
+  ) {
+    final $$ExpenseParticipantSharesTableFilterComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.expenseParticipantShares,
+          getReferencedColumn: (t) => t.expenseParticipantId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$ExpenseParticipantSharesTableFilterComposer(
+                $db: $db,
+                $table: $db.expenseParticipantShares,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
 }
 
 class $$ExpenseParticipantsTableOrderingComposer
@@ -2962,6 +3418,11 @@ class $$ExpenseParticipantsTableOrderingComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   $$ExpensesTableOrderingComposer get expenseId {
     final $$ExpensesTableOrderingComposer composer = $composerBuilder(
       composer: this,
@@ -3018,6 +3479,9 @@ class $$ExpenseParticipantsTableAnnotationComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
   $$ExpensesTableAnnotationComposer get expenseId {
     final $$ExpensesTableAnnotationComposer composer = $composerBuilder(
       composer: this,
@@ -3063,6 +3527,33 @@ class $$ExpenseParticipantsTableAnnotationComposer
     );
     return composer;
   }
+
+  Expression<T> expenseParticipantSharesRefs<T extends Object>(
+    Expression<T> Function($$ExpenseParticipantSharesTableAnnotationComposer a)
+    f,
+  ) {
+    final $$ExpenseParticipantSharesTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.expenseParticipantShares,
+          getReferencedColumn: (t) => t.expenseParticipantId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$ExpenseParticipantSharesTableAnnotationComposer(
+                $db: $db,
+                $table: $db.expenseParticipantShares,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
 }
 
 class $$ExpenseParticipantsTableTableManager
@@ -3078,7 +3569,11 @@ class $$ExpenseParticipantsTableTableManager
           $$ExpenseParticipantsTableUpdateCompanionBuilder,
           (ExpenseParticipant, $$ExpenseParticipantsTableReferences),
           ExpenseParticipant,
-          PrefetchHooks Function({bool expenseId, bool personId})
+          PrefetchHooks Function({
+            bool expenseId,
+            bool personId,
+            bool expenseParticipantSharesRefs,
+          })
         > {
   $$ExpenseParticipantsTableTableManager(
     _$AppDatabase db,
@@ -3101,23 +3596,23 @@ class $$ExpenseParticipantsTableTableManager
               ),
           updateCompanionCallback:
               ({
+                Value<int> id = const Value.absent(),
                 Value<int> expenseId = const Value.absent(),
                 Value<int> personId = const Value.absent(),
-                Value<int> rowid = const Value.absent(),
               }) => ExpenseParticipantsCompanion(
+                id: id,
                 expenseId: expenseId,
                 personId: personId,
-                rowid: rowid,
               ),
           createCompanionCallback:
               ({
+                Value<int> id = const Value.absent(),
                 required int expenseId,
                 required int personId,
-                Value<int> rowid = const Value.absent(),
               }) => ExpenseParticipantsCompanion.insert(
+                id: id,
                 expenseId: expenseId,
                 personId: personId,
-                rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
               .map(
@@ -3127,7 +3622,363 @@ class $$ExpenseParticipantsTableTableManager
                 ),
               )
               .toList(),
-          prefetchHooksCallback: ({expenseId = false, personId = false}) {
+          prefetchHooksCallback:
+              ({
+                expenseId = false,
+                personId = false,
+                expenseParticipantSharesRefs = false,
+              }) {
+                return PrefetchHooks(
+                  db: db,
+                  explicitlyWatchedTables: [
+                    if (expenseParticipantSharesRefs)
+                      db.expenseParticipantShares,
+                  ],
+                  addJoins:
+                      <
+                        T extends TableManagerState<
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic
+                        >
+                      >(state) {
+                        if (expenseId) {
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.expenseId,
+                                    referencedTable:
+                                        $$ExpenseParticipantsTableReferences
+                                            ._expenseIdTable(db),
+                                    referencedColumn:
+                                        $$ExpenseParticipantsTableReferences
+                                            ._expenseIdTable(db)
+                                            .id,
+                                  )
+                                  as T;
+                        }
+                        if (personId) {
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.personId,
+                                    referencedTable:
+                                        $$ExpenseParticipantsTableReferences
+                                            ._personIdTable(db),
+                                    referencedColumn:
+                                        $$ExpenseParticipantsTableReferences
+                                            ._personIdTable(db)
+                                            .id,
+                                  )
+                                  as T;
+                        }
+
+                        return state;
+                      },
+                  getPrefetchedDataCallback: (items) async {
+                    return [
+                      if (expenseParticipantSharesRefs)
+                        await $_getPrefetchedData<
+                          ExpenseParticipant,
+                          $ExpenseParticipantsTable,
+                          ExpenseParticipantShare
+                        >(
+                          currentTable: table,
+                          referencedTable: $$ExpenseParticipantsTableReferences
+                              ._expenseParticipantSharesRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$ExpenseParticipantsTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).expenseParticipantSharesRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.expenseParticipantId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                    ];
+                  },
+                );
+              },
+        ),
+      );
+}
+
+typedef $$ExpenseParticipantsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $ExpenseParticipantsTable,
+      ExpenseParticipant,
+      $$ExpenseParticipantsTableFilterComposer,
+      $$ExpenseParticipantsTableOrderingComposer,
+      $$ExpenseParticipantsTableAnnotationComposer,
+      $$ExpenseParticipantsTableCreateCompanionBuilder,
+      $$ExpenseParticipantsTableUpdateCompanionBuilder,
+      (ExpenseParticipant, $$ExpenseParticipantsTableReferences),
+      ExpenseParticipant,
+      PrefetchHooks Function({
+        bool expenseId,
+        bool personId,
+        bool expenseParticipantSharesRefs,
+      })
+    >;
+typedef $$ExpenseParticipantSharesTableCreateCompanionBuilder =
+    ExpenseParticipantSharesCompanion Function({
+      Value<int> id,
+      required int expenseParticipantId,
+      required double shareValue,
+    });
+typedef $$ExpenseParticipantSharesTableUpdateCompanionBuilder =
+    ExpenseParticipantSharesCompanion Function({
+      Value<int> id,
+      Value<int> expenseParticipantId,
+      Value<double> shareValue,
+    });
+
+final class $$ExpenseParticipantSharesTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $ExpenseParticipantSharesTable,
+          ExpenseParticipantShare
+        > {
+  $$ExpenseParticipantSharesTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $ExpenseParticipantsTable _expenseParticipantIdTable(
+    _$AppDatabase db,
+  ) => db.expenseParticipants.createAlias(
+    $_aliasNameGenerator(
+      db.expenseParticipantShares.expenseParticipantId,
+      db.expenseParticipants.id,
+    ),
+  );
+
+  $$ExpenseParticipantsTableProcessedTableManager get expenseParticipantId {
+    final $_column = $_itemColumn<int>('expense_participant_id')!;
+
+    final manager = $$ExpenseParticipantsTableTableManager(
+      $_db,
+      $_db.expenseParticipants,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(
+      _expenseParticipantIdTable($_db),
+    );
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$ExpenseParticipantSharesTableFilterComposer
+    extends Composer<_$AppDatabase, $ExpenseParticipantSharesTable> {
+  $$ExpenseParticipantSharesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get shareValue => $composableBuilder(
+    column: $table.shareValue,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$ExpenseParticipantsTableFilterComposer get expenseParticipantId {
+    final $$ExpenseParticipantsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.expenseParticipantId,
+      referencedTable: $db.expenseParticipants,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ExpenseParticipantsTableFilterComposer(
+            $db: $db,
+            $table: $db.expenseParticipants,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$ExpenseParticipantSharesTableOrderingComposer
+    extends Composer<_$AppDatabase, $ExpenseParticipantSharesTable> {
+  $$ExpenseParticipantSharesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get shareValue => $composableBuilder(
+    column: $table.shareValue,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$ExpenseParticipantsTableOrderingComposer get expenseParticipantId {
+    final $$ExpenseParticipantsTableOrderingComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.expenseParticipantId,
+          referencedTable: $db.expenseParticipants,
+          getReferencedColumn: (t) => t.id,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$ExpenseParticipantsTableOrderingComposer(
+                $db: $db,
+                $table: $db.expenseParticipants,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return composer;
+  }
+}
+
+class $$ExpenseParticipantSharesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ExpenseParticipantSharesTable> {
+  $$ExpenseParticipantSharesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<double> get shareValue => $composableBuilder(
+    column: $table.shareValue,
+    builder: (column) => column,
+  );
+
+  $$ExpenseParticipantsTableAnnotationComposer get expenseParticipantId {
+    final $$ExpenseParticipantsTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.expenseParticipantId,
+          referencedTable: $db.expenseParticipants,
+          getReferencedColumn: (t) => t.id,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$ExpenseParticipantsTableAnnotationComposer(
+                $db: $db,
+                $table: $db.expenseParticipants,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return composer;
+  }
+}
+
+class $$ExpenseParticipantSharesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $ExpenseParticipantSharesTable,
+          ExpenseParticipantShare,
+          $$ExpenseParticipantSharesTableFilterComposer,
+          $$ExpenseParticipantSharesTableOrderingComposer,
+          $$ExpenseParticipantSharesTableAnnotationComposer,
+          $$ExpenseParticipantSharesTableCreateCompanionBuilder,
+          $$ExpenseParticipantSharesTableUpdateCompanionBuilder,
+          (ExpenseParticipantShare, $$ExpenseParticipantSharesTableReferences),
+          ExpenseParticipantShare,
+          PrefetchHooks Function({bool expenseParticipantId})
+        > {
+  $$ExpenseParticipantSharesTableTableManager(
+    _$AppDatabase db,
+    $ExpenseParticipantSharesTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ExpenseParticipantSharesTableFilterComposer(
+                $db: db,
+                $table: table,
+              ),
+          createOrderingComposer: () =>
+              $$ExpenseParticipantSharesTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer: () =>
+              $$ExpenseParticipantSharesTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<int> expenseParticipantId = const Value.absent(),
+                Value<double> shareValue = const Value.absent(),
+              }) => ExpenseParticipantSharesCompanion(
+                id: id,
+                expenseParticipantId: expenseParticipantId,
+                shareValue: shareValue,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required int expenseParticipantId,
+                required double shareValue,
+              }) => ExpenseParticipantSharesCompanion.insert(
+                id: id,
+                expenseParticipantId: expenseParticipantId,
+                shareValue: shareValue,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$ExpenseParticipantSharesTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({expenseParticipantId = false}) {
             return PrefetchHooks(
               db: db,
               explicitlyWatchedTables: [],
@@ -3147,32 +3998,17 @@ class $$ExpenseParticipantsTableTableManager
                       dynamic
                     >
                   >(state) {
-                    if (expenseId) {
+                    if (expenseParticipantId) {
                       state =
                           state.withJoin(
                                 currentTable: table,
-                                currentColumn: table.expenseId,
+                                currentColumn: table.expenseParticipantId,
                                 referencedTable:
-                                    $$ExpenseParticipantsTableReferences
-                                        ._expenseIdTable(db),
+                                    $$ExpenseParticipantSharesTableReferences
+                                        ._expenseParticipantIdTable(db),
                                 referencedColumn:
-                                    $$ExpenseParticipantsTableReferences
-                                        ._expenseIdTable(db)
-                                        .id,
-                              )
-                              as T;
-                    }
-                    if (personId) {
-                      state =
-                          state.withJoin(
-                                currentTable: table,
-                                currentColumn: table.personId,
-                                referencedTable:
-                                    $$ExpenseParticipantsTableReferences
-                                        ._personIdTable(db),
-                                referencedColumn:
-                                    $$ExpenseParticipantsTableReferences
-                                        ._personIdTable(db)
+                                    $$ExpenseParticipantSharesTableReferences
+                                        ._expenseParticipantIdTable(db)
                                         .id,
                               )
                               as T;
@@ -3189,19 +4025,19 @@ class $$ExpenseParticipantsTableTableManager
       );
 }
 
-typedef $$ExpenseParticipantsTableProcessedTableManager =
+typedef $$ExpenseParticipantSharesTableProcessedTableManager =
     ProcessedTableManager<
       _$AppDatabase,
-      $ExpenseParticipantsTable,
-      ExpenseParticipant,
-      $$ExpenseParticipantsTableFilterComposer,
-      $$ExpenseParticipantsTableOrderingComposer,
-      $$ExpenseParticipantsTableAnnotationComposer,
-      $$ExpenseParticipantsTableCreateCompanionBuilder,
-      $$ExpenseParticipantsTableUpdateCompanionBuilder,
-      (ExpenseParticipant, $$ExpenseParticipantsTableReferences),
-      ExpenseParticipant,
-      PrefetchHooks Function({bool expenseId, bool personId})
+      $ExpenseParticipantSharesTable,
+      ExpenseParticipantShare,
+      $$ExpenseParticipantSharesTableFilterComposer,
+      $$ExpenseParticipantSharesTableOrderingComposer,
+      $$ExpenseParticipantSharesTableAnnotationComposer,
+      $$ExpenseParticipantSharesTableCreateCompanionBuilder,
+      $$ExpenseParticipantSharesTableUpdateCompanionBuilder,
+      (ExpenseParticipantShare, $$ExpenseParticipantSharesTableReferences),
+      ExpenseParticipantShare,
+      PrefetchHooks Function({bool expenseParticipantId})
     >;
 
 class $AppDatabaseManager {
@@ -3217,4 +4053,9 @@ class $AppDatabaseManager {
       $$PersonsTableTableManager(_db, _db.persons);
   $$ExpenseParticipantsTableTableManager get expenseParticipants =>
       $$ExpenseParticipantsTableTableManager(_db, _db.expenseParticipants);
+  $$ExpenseParticipantSharesTableTableManager get expenseParticipantShares =>
+      $$ExpenseParticipantSharesTableTableManager(
+        _db,
+        _db.expenseParticipantShares,
+      );
 }
